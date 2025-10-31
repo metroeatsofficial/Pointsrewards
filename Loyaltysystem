@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MetroEats Loyalty Sign-Up & Check-In</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  label { display: block; margin-top: 10px; }
+  input { padding: 8px; width: 250px; margin-top: 5px; }
+  button { margin-top: 20px; padding: 10px 20px; font-size: 16px; }
+  .message { margin-top: 20px; font-weight: bold; }
+  #checkInSection { display: none; }
+</style>
+</head>
+<body>
+  <h1>MetroEats Loyalty Program</h1>
+
+  <section id="signupSection">
+    <h2>Sign Up</h2>
+    <form id="signupForm">
+      <label for="name">Full Name:</label>
+      <input type="text" id="name" required placeholder="Your Name" />
+      
+      <label for="email">Email:</label>
+      <input type="email" id="email" required placeholder="you@example.com" />
+      
+      <label for="phone">Phone Number:</label>
+      <input type="tel" id="phone" required placeholder="123-456-7890" />
+      
+      <label for="postal">Postal Code:</label>
+      <input type="text" id="postal" required placeholder="A1A 1A1" maxlength="7" />
+      
+      <button type="submit">Register</button>
+    </form>
+    <div class="message" id="signupMessage"></div>
+  </section>
+
+  <section id="checkInSection">
+    <h2>Check-In to Collect Points</h2>
+    <p>Welcome, <span id="userName"></span>!</p>
+    <form id="checkInForm">
+      <button type="submit">Check In & Collect 10 Points</button>
+    </form>
+    <div class="message" id="checkInMessage"></div>
+    <div id="pointsDisplay"></div>
+  </section>
+
+<script>
+  // Save user info to localStorage keyed by email
+  function saveUser(user) {
+    localStorage.setItem('MetroEatsUser_' + user.email, JSON.stringify(user));
+  }
+
+  // Retrieve user info from localStorage
+  function getUser(email) {
+    const userData = localStorage.getItem('MetroEatsUser_' + email);
+    return userData ? JSON.parse(userData) : null;
+  }
+
+  // Get points from localStorage keyed by email
+  function getPoints(email) {
+    const points = localStorage.getItem('MetroEatsPoints_' + email);
+    return points ? parseInt(points) : 0;
+  }
+
+  // Add points and save
+  function addPoints(email, amount) {
+    const currentPoints = getPoints(email);
+    const newPoints = currentPoints + amount;
+    localStorage.setItem('MetroEatsPoints_' + email, newPoints);
+    return newPoints;
+  }
+
+  // DOM Elements
+  const signupForm = document.getElementById('signupForm');
+  const signupMessage = document.getElementById('signupMessage');
+  const signupSection = document.getElementById('signupSection');
+  const checkInSection = document.getElementById('checkInSection');
+  const userNameSpan = document.getElementById('userName');
+  const checkInForm = document.getElementById('checkInForm');
+  const checkInMessage = document.getElementById('checkInMessage');
+  const pointsDisplay = document.getElementById('pointsDisplay');
+
+  // On Sign Up form submit
+  signupForm.addEventListener('submit', e => {
+    e.preventDefault();
+
+    const user = {
+      name: document.getElementById('name').value.trim(),
+      email: document.getElementById('email').value.trim().toLowerCase(),
+      phone: document.getElementById('phone').value.trim(),
+      postal: document.getElementById('postal').value.trim().toUpperCase()
+    };
+
+    if(getUser(user.email)) {
+      signupMessage.textContent = 'You are already registered! Please check in below.';
+      showCheckIn(user);
+      return;
+    }
+
+    saveUser(user);
+    signupMessage.textContent = 'Registration successful! You can now check in to earn points.';
+    showCheckIn(user);
+
+    signupForm.reset();
+  });
+
+  // Show check-in section with user info
+  function showCheckIn(user) {
+    signupSection.style.display = 'none';
+    checkInSection.style.display = 'block';
+    userNameSpan.textContent = user.name;
+    updatePointsDisplay(user.email);
+    checkInMessage.textContent = '';
+  }
+
+  // Check-in to collect points
+  checkInForm.addEventListener('submit', e => {
+    e.preventDefault();
+
+    // Get user email from displayed name (find user in localStorage)
+    const emailInput = document.getElementById('email');
+    // Since email input is hidden in check-in, fetch from userNameSpan + stored users
+    const userEmail = Object.keys(localStorage).find(key => {
+      if(key.startsWith('MetroEatsUser_')) {
+        const user = JSON.parse(localStorage.getItem(key));
+        if(user.name === userNameSpan.textContent) return true;
+      }
+      return false;
+    });
+
+    if(!userEmail) {
+      checkInMessage.textContent = 'User not found. Please register again.';
+      checkInSection.style.display = 'none';
+      signupSection.style.display = 'block';
+      return;
+    }
+
+    const email = userEmail.replace('MetroEatsUser_', '');
+    const pointsAdded = 10; // points per check-in
+    const totalPoints = addPoints(email, pointsAdded);
+
+    checkInMessage.textContent = `Thanks for checking in! You earned ${pointsAdded} points.`;
+    updatePointsDisplay(email);
+  });
+
+  // Update points display area
+  function updatePointsDisplay(email) {
+    const points = getPoints(email);
+    pointsDisplay.textContent = `You currently have ${points} MetroEats points.`;
+  }
+
+  // On load: check if any user email stored, show either signup or check-in
+  window.onload = () => {
+    for(let i=0; i<localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if(key.startsWith('MetroEatsUser_')) {
+        const user = JSON.parse(localStorage.getItem(key));
+        showCheckIn(user);
+        return;
+      }
+    }
+    signupSection.style.display = 'block';
+    checkInSection.style.display = 'none';
+  }
+</script>
+
+</body>
+</html>
+
+
+Add index.html
